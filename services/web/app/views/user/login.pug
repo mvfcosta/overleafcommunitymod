@@ -1,0 +1,86 @@
+extends ../layout-website-redesign
+
+block vars
+	- isWebsiteRedesign = true
+
+append css
+	style.
+		.content {
+			background-color: #b8bfc8 !important;
+			min-height: 100vh;
+		}
+		.login-card {
+			background-color: #f0f2f5;
+			border-radius: 10px;
+			padding: 32px 36px;
+			box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+		}
+		.login-card .page-header h3 {
+			text-align: center;
+			margin-bottom: 20px;
+		}
+		.navbar-main {
+			background-color: #1F3765 !important;
+			min-height: unset !important;
+			padding-top: 4px !important;
+			padding-bottom: 4px !important;
+		}
+		.navbar-main .navbar-brand,
+		.navbar-main .nav-link,
+		.navbar-main button {
+			padding-top: 2px !important;
+			padding-bottom: 2px !important;
+			font-size: 0.85rem !important;
+			color: #ffffff !important;
+		}
+		.navbar-main .navbar-title,
+		.navbar-main .navbar-title span {
+			color: #ffffff !important;
+		}
+
+block content
+	main#main-content.content
+		.container
+			.row
+				.col-lg-6.offset-lg-3.col-xl-4.offset-xl-4
+					.text-center.mb-4
+						img(src='/img/unesp-logo.png' alt='UNESP' style='height:70px;')
+					.login-card
+						.page-header
+							if login_support_title
+								h3 !{login_support_title}
+							else
+								h3 #{translate("log_in")}
+						form(name='loginForm' data-ol-async-form action='/login' method='POST')
+							input(name='_csrf' type='hidden' value=csrfToken)
+							+formMessagesNewStyle
+							+customFormMessageNewStyle('invalid-password-retry-or-reset', 'danger')
+								| !{translate('email_or_password_wrong_try_again_or_reset', {}, [{ name: 'a', attrs: { href: '/user/password/reset', 'aria-describedby': 'resetPasswordDescription' } }])}
+								span.visually-hidden(id='resetPasswordDescription')
+									| #{translate('reset_password_link')}
+							+customFormMessageNewStyle('password-compromised')
+								| !{translate('password_compromised_try_again_or_use_known_device_or_reset', {}, [{name: 'a', attrs: {href: 'https://haveibeenpwned.com/passwords', rel: 'noopener noreferrer', target: '_blank'}}, {name: 'a', attrs: {href: '/user/password/reset', target: '_blank'}}])}.
+							.form-group
+								label(for='email') #{translate("email")}
+								input#email.form-control(
+									name='email'
+									type='email'
+									required
+									autofocus='true'
+									autocomplete='username'
+								)
+							.form-group
+								label(for='password') #{translate("password")}
+								input#password.form-control(
+									name='password'
+									type='password'
+									autocomplete='current-password'
+									required
+								)
+							.actions
+								button.btn-primary.btn(type='submit' data-ol-disabled-inflight)
+									span(data-ol-inflight='idle') #{translate("login")}
+									span(hidden data-ol-inflight='pending') #{translate("logging_in")}…
+							if login_support_text
+								hr
+								p.text-center !{login_support_text}

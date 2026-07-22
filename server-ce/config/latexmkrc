@@ -1,0 +1,10 @@
+# equivalent to -gt option. Used to prevent latexmk from skipping recompilation
+# of output.log and output.pdf
+$go_mode = 3;
+
+# Allow EPS -> PDF conversion via epstopdf/repstopdf.
+# In some environments -shell-restricted still blocks the converter;
+# -shell-escape ensures generation of *-eps-converted-to.pdf.
+$pdflatex = 'pdflatex -shell-escape %O %S';
+$xelatex  = 'xelatex -shell-escape %O %S';
+$lualatex = 'lualatex -shell-escape %O %S';

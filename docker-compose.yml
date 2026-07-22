@@ -1,0 +1,85 @@
+services:
+  sharelatex:
+    image: overleaf-ce
+    container_name: sharelatex
+    restart: always
+    ports:
+      - "127.0.0.1:8080:80"
+    stop_grace_period: 60s
+    entrypoint: ["/bin/sh", "-c", "rm -rf /var/lib/sharelatex /var/log/sharelatex /etc/sharelatex && mkdir -p /var/log/overleaf && chmod -R a+x /etc/service/ && find /etc/my_init.d /etc/my_init.pre_shutdown.d -type f | xargs chmod +x 2>/dev/null; exec /sbin/my_init"]
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - /srv/overleaf-dados/sharelatex:/var/lib/overleaf
+      - /srv/overleaf-dados/texlive:/usr/local/texlive
+      - /srv/overleaf-dados/login.pug:/overleaf/services/web/app/views/user/login.pug
+      - /srv/overleaf-dados/logo_Unesp.png:/overleaf/services/web/public/img/unesp-logo.png
+      - /srv/overleaf-dados/SA01.gif:/overleaf/services/web/public/img/SA01.gif
+    networks:
+      - internal
+    environment:
+      OVERLEAF_APP_NAME: Overleaf UNESP
+      OVERLEAF_NAV_TITLE: Overleaf UNESP
+      OVERLEAF_SITE_URL: https://overleaf.unesp.br
+      OVERLEAF_ADMIN_EMAIL: ti@unesp.br
+      OVERLEAF_MONGO_URL: mongodb://mongo/sharelatex
+      OVERLEAF_REDIS_HOST: redis
+      REDIS_HOST: redis
+      ENABLED_LINKED_FILE_TYPES: project_file,project_output_file
+      ENABLE_CONVERSIONS: "true"
+      EMAIL_CONFIRMATION_DISABLED: "true"
+
+      OVERLEAF_EMAIL_FROM_ADDRESS: noreply@unesp.br
+      OVERLEAF_EMAIL_SMTP_HOST: "200.145.6.21"
+      OVERLEAF_EMAIL_SMTP_PORT: "25"
+      OVERLEAF_EMAIL_SMTP_SECURE: "false"
+      OVERLEAF_EMAIL_SMTP_IGNORE_TLS: "true"
+      OVERLEAF_EMAIL_DRIVER: "smtp"
+
+      OVERLEAF_TEMPLATE_LINKS: '[{"name":"Galeria Overleaf","url":"https://www.overleaf.com/latex/templates","trackingKey":"overleaf"}]'
+      OVERLEAF_LDAP_HOST: 200.145.6.59
+      OVERLEAF_LDAP_PORT: 389
+      OVERLEAF_LDAP_BIND_DN: cn=update,dc=unesp,dc=br
+      OVERLEAF_LDAP_BIND_CREDENTIALS: COLOQUE_A_SENHA_AQUI
+      OVERLEAF_LDAP_SEARCH_BASE: dc=unesp,dc=br
+      OVERLEAF_LDAP_SEARCH_FILTER: (mail={{username}})
+      OVERLEAF_LDAP_EMAIL_ATT: mail
+      OVERLEAF_LDAP_FIRST_NAME_ATT: givenName
+      OVERLEAF_LDAP_LAST_NAME_ATT: sn
+      OVERLEAF_LDAP_UPDATE_USER_DETAILS_ON_LOGIN: "true"
+
+  mongo:
+    image: mongo:8.0
+    container_name: mongo
+    restart: always
+    command: --replSet overleaf
+    volumes:
+      - /srv/overleaf/data/mongo:/data/db
+      - ./bin/shared/mongodb-init-replica-set.js:/docker-entrypoint-initdb.d/mongodb-init-replica-set.js
+    environment:
+      MONGO_INITDB_DATABASE: sharelatex
+    extra_hosts:
+      - mongo:127.0.0.1
+    healthcheck:
+      test: echo 'db.stats().ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - internal
+
+  redis:
+    image: redis:6.2
+    container_name: redis
+    restart: always
+    volumes:
+      - /srv/overleaf/data/redis:/data
+    networks:
+      - internal
+
+networks:
+  internal:
+    internal: true
