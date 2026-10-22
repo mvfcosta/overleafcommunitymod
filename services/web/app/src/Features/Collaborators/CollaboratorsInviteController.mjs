@@ -1,6 +1,8 @@
 import ProjectGetter from '../Project/ProjectGetter.mjs'
 import LimitationsManager from '../Subscription/LimitationsManager.mjs'
 import UserGetter from '../User/UserGetter.mjs'
+import UserRegistrationHandler from '../User/UserRegistrationHandler.mjs'
+import { User } from '../../models/User.mjs'
 import CollaboratorsGetter from './CollaboratorsGetter.mjs'
 import CollaboratorsInviteHandler from './CollaboratorsInviteHandler.mjs'
 import CollaboratorsInviteGetter from './CollaboratorsInviteGetter.mjs'
@@ -55,6 +57,32 @@ async function _checkShouldInviteEmail(email) {
     return true
   }
 }
+
+async function _ensureExternalUserAccount(email) {
+  if (
+    !Settings.ldap?.enable ||
+    email.toLowerCase().endsWith('@unesp.br')
+  ) {
+    return
+  }
+
+  let user = await UserGetter.promises.getUserByAnyEmail(email)
+  if (!user) {
+    ;({ user } =
+      await UserRegistrationHandler.promises.registerNewUserAndSendActivationEmail(
+        email
+      )
+    )
+  }
+
+  if (user.authProvider !== 'ldap') {
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { authProvider: 'local-invite' } }
+    ).exec()
+  }
+}
+
 
 async function _checkRateLimit(userId) {
   let collabLimit =
@@ -146,6 +174,7 @@ async function inviteToProject(req, res) {
     return res.sendStatus(429)
   }
 
+  await _ensureExternalUserAccount(email)
   const shouldAllowInvite =
     await CollaboratorsInviteController._checkShouldInviteEmail(email)
   if (!shouldAllowInvite) {

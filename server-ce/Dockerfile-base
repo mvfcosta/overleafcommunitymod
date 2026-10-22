@@ -80,7 +80,9 @@ RUN mkdir /install-tl-unx \
       synctex \
       etoolbox \
       xetex \
+      collection-langportuguese \
 &&  tlmgr path add \
+&&  fmtutil-sys --all \
 &&  printf '#!/bin/sh\nset -eu\nout=""\nin=""\nfor a in "$@"; do\n  case "$a" in\n    --outfile=*) out="${a#--outfile=}" ;;\n    --restricted) ;;\n    *) in="$a" ;;\n  esac\ndone\n[ -n "$in" ] || exit 2\n[ -n "$out" ] || out="${in%.eps}.pdf"\nexec gs -dSAFER -dBATCH -dNOPAUSE -sDEVICE=pdfwrite -dEPSCrop -sOutputFile="$out" "$in"\n' > /usr/local/bin/epstopdf \
 &&  chmod +x /usr/local/bin/epstopdf \
 &&  ln -sf /usr/local/bin/epstopdf /usr/local/bin/repstopdf \

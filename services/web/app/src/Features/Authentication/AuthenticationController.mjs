@@ -81,6 +81,7 @@ const AuthenticationController = {
       must_reconfirm: user.must_reconfirm,
       v1_id: user.overleaf != null ? user.overleaf.id : undefined,
       analyticsId: user.analyticsId || user._id,
+      authProvider: user.authProvider,
       alphaProgram: user.alphaProgram || undefined, // only store if set
       betaProgram: user.betaProgram || undefined, // only store if set
     }
@@ -107,7 +108,7 @@ const AuthenticationController = {
      *    usando o servidor LDAP/AD como fonte de verdade de credenciais.
      *  - 'local'    nos demais casos, validando senha contra bcrypt no MongoDB.
      */
-    const strategy = Settings.ldap?.enable ? 'ldapauth' : 'local'
+    const strategy = Settings.ldap?.enable ? ['ldapauth', 'local'] : 'local'
 
     passport.authenticate(
       strategy,
@@ -306,6 +307,22 @@ const AuthenticationController = {
       }
     } else if (user) {
       if (
+        Settings.ldap?.enable &&
+        user.authProvider !== 'local-invite'
+      ) {
+        Metrics.inc('login_failure_reason', 1, {
+          status: 'local_login_not_invited',
+        })
+        return {
+          user: false,
+          info: {
+            type: 'error',
+            key: 'invalid-password-retry-or-reset',
+            status: 401,
+          },
+        }
+      }
+      if (
         isPasswordReused &&
         AuthenticationController.getRedirectFromSession(req) == null
       ) {
@@ -443,6 +460,9 @@ const AuthenticationController = {
   requireGlobalLogin(req, res, next) {
     if (
       AuthenticationController._globalLoginWhitelist.includes(
+        req._parsedUrl.pathname
+      ) ||
+      /^\/project\/[^/]+\/invite\/token\/[^/]+$/.test(
         req._parsedUrl.pathname
       )
     ) {

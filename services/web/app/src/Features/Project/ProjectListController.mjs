@@ -852,6 +852,10 @@ function _formatProjectInfo(project, accessLevel, source, userId) {
  * @private
  */
 async function _injectProjectUsers(projects) {
+  if (projects.length === 0) {
+    return []
+  }
+
   const userIds = new Set()
   for (const project of projects) {
     if (project.owner_ref != null) {

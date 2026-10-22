@@ -1,4 +1,5 @@
 import AuthenticationController from '../Authentication/AuthenticationController.mjs'
+import AuthorizationMiddleware from '../Authorization/AuthorizationMiddleware.mjs'
 import LocalTemplatesController from './LocalTemplatesController.mjs'
 
 export default {
@@ -8,6 +9,7 @@ export default {
     app.post(
       '/project/new/local-template/:templateId',
       AuthenticationController.requireLogin(),
+      AuthorizationMiddleware.ensureUserCanCreateProject,
       LocalTemplatesController.createFromTemplate
     )
   },

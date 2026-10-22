@@ -240,6 +240,10 @@ const UserPagesController = {
   logout: expressify(logout),
 
   registerPage(req, res) {
+    if (Settings.ldap?.enable && !req.session.sharedProjectData) {
+      return res.redirect('/login')
+    }
+
     const sharedProjectData = req.session.sharedProjectData || {}
 
     const newTemplateData = {}

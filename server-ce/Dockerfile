@@ -6,6 +6,8 @@
 ARG OVERLEAF_BASE_TAG=sharelatex/sharelatex-base:latest
 FROM $OVERLEAF_BASE_TAG
 
+ENV PATH="/usr/local/texlive/2023/bin/x86_64-linux:${PATH}"
+
 # Remove legacy ShareLaTeX branded paths that the v5 startup check rejects
 RUN rm -rf /var/lib/sharelatex /var/log/sharelatex /etc/sharelatex
 

@@ -1,4 +1,5 @@
 import AuthenticationController from '../Authentication/AuthenticationController.mjs'
+import AuthorizationMiddleware from '../Authorization/AuthorizationMiddleware.mjs'
 import TemplatesController from './TemplatesController.mjs'
 import TemplatesMiddleware from './TemplatesMiddleware.mjs'
 import { RateLimiter } from '../../infrastructure/RateLimiter.mjs'
@@ -29,6 +30,7 @@ export default {
     app.post(
       '/project/new/template',
       AuthenticationController.requireLogin(),
+      AuthorizationMiddleware.ensureUserCanCreateProject,
       RateLimiterMiddleware.rateLimit(rateLimiter),
       TemplatesController.createProjectFromV1Template
     )

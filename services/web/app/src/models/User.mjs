@@ -53,6 +53,10 @@ export const UserSchema = new Schema(
     role: { type: String, default: '' },
     institution: { type: String, default: '' },
     hashedPassword: String,
+    authProvider: {
+      type: String,
+      enum: ['ldap', 'local-invite'],
+    },
     enrollment: {
       sso: [
         {

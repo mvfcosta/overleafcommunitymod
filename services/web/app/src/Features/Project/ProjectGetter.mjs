@@ -2,6 +2,7 @@ import { db } from '../../infrastructure/mongodb.mjs'
 import Mongo from '../Helpers/Mongo.mjs'
 import OError from '@overleaf/o-error'
 import { Project } from '../../models/Project.mjs'
+import { User } from '../../models/User.mjs'
 import LockManager from '../../infrastructure/LockManager.mjs'
 import { DeletedProject } from '../../models/DeletedProject.mjs'
 import { callbackifyAll } from '@overleaf/promise-utils'
@@ -9,6 +10,31 @@ import ProjectEntityMongoUpdateHandler from './ProjectEntityMongoUpdateHandler.m
 import CollaboratorsGetter from '../Collaborators/CollaboratorsGetter.mjs'
 
 const { normalizeQuery } = Mongo
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+async function buildProjectsSearchQuery(search) {
+  const searchValue = (search || '').trim()
+  if (!searchValue) {
+    return {}
+  }
+
+  const regex = new RegExp(escapeRegex(searchValue), 'i')
+  const matchingOwners = await User.find({ email: regex }, { _id: 1 })
+    .limit(1000)
+    .lean()
+    .exec()
+
+  const ownerIds = matchingOwners.map(user => user._id)
+  const query = [{ name: regex }]
+  if (ownerIds.length > 0) {
+    query.push({ owner_ref: { $in: ownerIds } })
+  }
+
+  return { $or: query }
+}
 
 const ProjectGetter = {
   async getProject(projectId, projection = {}) {
@@ -134,6 +160,22 @@ const ProjectGetter = {
     )
       .limit(500)
       .populate('owner_ref', ['email', 'name'])
+      .exec()
+  },
+
+  async countProjects({ search = '' } = {}) {
+    const query = await buildProjectsSearchQuery(search)
+    return await Project.countDocuments(query).exec()
+  },
+
+  async findProjectsWithOwners({ limit = 500, skip = 0, search = '' } = {}) {
+    const query = await buildProjectsSearchQuery(search)
+
+    return await Project.find(query, 'name owner_ref lastUpdated')
+      .sort({ lastUpdated: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('owner_ref', ['email', 'first_name', 'last_name'])
       .exec()
   },
 

@@ -20,7 +20,12 @@ const CustomDropdownToggle = forwardRef<
   React.ComponentProps<'button'>
 >(({ onClick, 'aria-expanded': ariaExpanded }, ref) => {
   const { t } = useTranslation()
-
+  const currentUser = getMeta('ol-user') as
+    | { email?: string; isAdmin?: boolean }
+    | undefined
+  if (currentUser?.email && !currentUser.email.toLowerCase().endsWith('@unesp.br') && !currentUser.isAdmin) {
+    return null
+  }
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     onClick?.(e)

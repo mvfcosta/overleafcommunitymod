@@ -101,27 +101,23 @@ async function findOrCreateUser(ldapUser) {
       first_name: firstName,
       last_name: lastName,
       holdingAccount: false,
+      authProvider: 'ldap',
     })
 
     logger.debug({ email, userId: user._id }, 'LDAP: new account provisioned')
-  } else if (Settings.ldap?.updateUserDetailsOnLogin) {
-    /**
-     * Logins subsequentes com sincronização de dados habilitada.
-     * Mantém nome e sobrenome alinhados com o diretório LDAP, útil quando
-     * o administrador atualiza dados no AD/LDAP e quer que reflitam no Overleaf.
-     */
-    logger.debug(
-      { email, userId: user._id },
-      'LDAP: updating user details from directory'
-    )
+  } else {
+    const update = { $set: { authProvider: 'ldap' } }
+    if (Settings.ldap?.updateUserDetailsOnLogin) {
+      update.$set.first_name = firstName
+      update.$set.last_name = lastName
+    }
+    await UserUpdater.promises.updateUser(user._id, update)
 
-    await UserUpdater.promises.updateUser(user._id, {
-      $set: { first_name: firstName, last_name: lastName },
-    })
-
-    // Atualiza objeto em memória para que a sessão já reflita os novos dados
-    user.first_name = firstName
-    user.last_name = lastName
+    user.authProvider = 'ldap'
+    if (Settings.ldap?.updateUserDetailsOnLogin) {
+      user.first_name = firstName
+      user.last_name = lastName
+    }
   }
 
   return user

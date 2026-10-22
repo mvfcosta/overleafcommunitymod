@@ -59,6 +59,12 @@ function NewProjectButton({
   showAddAffiliationWidget,
 }: NewProjectButtonProps) {
   const { t } = useTranslation()
+  const currentUser = getMeta('ol-user') as
+    | { email?: string; isAdmin?: boolean }
+    | undefined
+  if (currentUser?.email && !currentUser.email.toLowerCase().endsWith('@unesp.br') && !currentUser.isAdmin) {
+    return null
+  }
   const { templateLinks } = getMeta('ol-ExposedSettings')
   const [modal, setModal] =
     useState<Nullable<NewProjectButtonModalVariant>>(null)

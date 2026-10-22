@@ -22,6 +22,7 @@ export default {
     webRouter.post(
       '/project/new/upload',
       AuthenticationController.requireLogin(),
+      AuthorizationMiddleware.ensureUserCanCreateProject,
       RateLimiterMiddleware.rateLimit(rateLimiters.projectUpload),
       ProjectUploadController.multerMiddleware,
       ProjectUploadController.uploadProject
@@ -31,6 +32,7 @@ export default {
       webRouter.post(
         '/project/new/import-docx',
         AuthenticationController.requireLogin(),
+        AuthorizationMiddleware.ensureUserCanCreateProject,
         RateLimiterMiddleware.rateLimit(rateLimiters.projectUpload),
         ProjectUploadController.multerMiddleware,
         ProjectUploadController.importDocx

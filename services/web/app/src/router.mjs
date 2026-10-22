@@ -537,6 +537,7 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
   webRouter.post(
     '/project/new',
     AuthenticationController.requireLogin(),
+    AuthorizationMiddleware.ensureUserCanCreateProject,
     RateLimiterMiddleware.rateLimit(rateLimiters.createProject),
     ProjectController.newProject
   )
@@ -727,6 +728,8 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
   )
   webRouter.post(
     '/Project/:Project_id/clone',
+    AuthenticationController.requireLogin(),
+    AuthorizationMiddleware.ensureUserCanCreateProject,
     AuthorizationMiddleware.ensureUserCanReadProject,
     ProjectController.cloneProject
   )
@@ -1129,6 +1132,42 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
     '/admin',
     AuthorizationMiddleware.ensureUserIsSiteAdmin,
     AdminController.index
+  )
+
+  webRouter.get(
+    '/admin/external-users',
+    AuthorizationMiddleware.ensureUserIsSiteAdmin,
+    AdminController.externalUsers
+  )
+
+  webRouter.post(
+    '/admin/external-users/:user_id/reset-password',
+    AuthorizationMiddleware.ensureUserIsSiteAdmin,
+    AdminController.resetExternalUserPassword
+  )
+
+  webRouter.post(
+    '/admin/external-users/:user_id/delete',
+    AuthorizationMiddleware.ensureUserIsSiteAdmin,
+    AdminController.deleteExternalUser
+  )
+
+  webRouter.get(
+    '/admin/projects',
+    AuthorizationMiddleware.ensureUserIsSiteAdmin,
+    AdminController.projects
+  )
+
+  webRouter.post(
+    '/admin/projects/delete',
+    AuthorizationMiddleware.ensureUserIsSiteAdmin,
+    AdminController.deleteProjects
+  )
+
+  webRouter.post(
+    '/admin/projects/:project_id/delete',
+    AuthorizationMiddleware.ensureUserIsSiteAdmin,
+    AdminController.deleteProject
   )
 
   if (!Features.hasFeature('saas')) {

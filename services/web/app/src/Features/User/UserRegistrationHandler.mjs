@@ -53,7 +53,7 @@ const UserRegistrationHandler = {
     userDetails.email = EmailHelper.parseEmail(userDetails.email)
 
     let user = await UserGetter.promises.getUserByAnyEmail(userDetails.email)
-    if (user && user.holdingAccount === false) {
+    if (user && user.holdingAccount === false && user.authProvider !== 'local-invite') {
       // We add userId to the error object so that the calling function can access
       // the id of the already existing user account.
       throw new OError('EmailAlreadyRegistered', { userId: user._id })

@@ -2,9 +2,7 @@
 # of output.log and output.pdf
 $go_mode = 3;
 
-# Allow EPS -> PDF conversion via epstopdf/repstopdf.
-# In some environments -shell-restricted still blocks the converter;
-# -shell-escape ensures generation of *-eps-converted-to.pdf.
-$pdflatex = 'pdflatex -shell-escape %O %S';
-$xelatex  = 'xelatex -shell-escape %O %S';
-$lualatex = 'lualatex -shell-escape %O %S';
+# Keep shell execution restricted to TeX Live's approved command list.
+$pdflatex = 'pdflatex %O %S';
+$xelatex  = 'xelatex %O %S';
+$lualatex = 'lualatex %O %S';

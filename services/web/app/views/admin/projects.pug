@@ -1,0 +1,123 @@
+extends ../layout-marketing
+
+block content
+  - function pageUrl(targetPage) {
+  -   const params = new URLSearchParams()
+  -   if (search) params.set('q', search)
+  -   params.set('sortBy', sortBy)
+  -   params.set('sortDir', sortDir)
+  -   params.set('pageSize', pageSize)
+  -   params.set('page', targetPage)
+  -   return '/admin/projects?' + params.toString()
+  - }
+  #main-content.content.content-alt
+    .container
+      .row
+        .col-sm-12
+          .card
+            .card-body
+              .page-header
+                h1 Admin - Projetos
+                p
+                  a(href='/admin') Voltar ao painel admin
+                  |  · 
+                  a(href='/admin/external-users') Usuários externos
+
+              form(method='get' action='/admin/projects' style='margin-bottom:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;')
+                input.form-control(type='text' name='q' value=search placeholder='Filtrar por nome do projeto ou e-mail do dono' style='max-width:420px;')
+                input(type='hidden' name='sortBy' value=sortBy)
+                input(type='hidden' name='sortDir' value=sortDir)
+                select.form-control(name='pageSize' style='width:auto;')
+                  each availablePageSize in pageSizes
+                    option(value=availablePageSize selected=availablePageSize === pageSize) #{availablePageSize} por página
+                button.btn.btn-primary(type='submit') Filtrar
+                if search
+                  a.btn.btn-default(href='/admin/projects') Limpar
+
+              p
+                strong Total de projetos no sistema: #{totalProjects}
+                br
+                strong Total no filtro atual: #{filteredProjects}
+                if filteredProjects
+                  |  — Página #{page} de #{pageCount}
+
+              if projects && projects.length
+                form#bulk-delete-form(method='post' action='/admin/projects/delete' onsubmit="return confirm('Tem certeza que deseja excluir todos os projetos selecionados? Esta ação é permanente.');")
+                  input(name='_csrf' type='hidden' value=csrfToken)
+                  .admin-projects-toolbar(style='display:flex; justify-content:space-between; align-items:center; margin:12px 0; flex-wrap:wrap; gap:8px;')
+                    label(style='margin:0;')
+                      input#select-all-projects(type='checkbox')
+                      |  Selecionar todos desta página
+                    button.btn.btn-danger(type='submit' disabled id='delete-selected-projects') Excluir selecionados
+
+                table.table.table-striped.table-bordered.admin-projects-table
+                  thead
+                    tr
+                      th(style='width:42px;')
+                      th
+                        a(href=sortLinks.name) Nome do projeto #{sortBy === 'name' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                      th
+                        a(href=sortLinks.ownerEmail) E-mail do autor #{sortBy === 'ownerEmail' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                      th
+                        a(href=sortLinks.createdAt) Data de criação (UTC) #{sortBy === 'createdAt' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                      th
+                        a(href=sortLinks.lastUpdated) Última alteração (UTC) #{sortBy === 'lastUpdated' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                      th Ações
+                  tbody
+                    each project in projects
+                      - const selectionLabel = 'Selecionar ' + project.name
+                      - const deleteUrl = '/admin/projects/' + project.id + '/delete'
+                      tr
+                        td
+                          input.project-selection(type='checkbox' name='project_ids' value=project.id form='bulk-delete-form' aria-label=selectionLabel)
+                        td= project.name
+                        td= project.ownerEmail
+                        td= project.createdAt ? moment(project.createdAt.toUTCString()).format('DD/MM/YYYY HH:mm:ss') + ' UTC' : '-'
+                        td= project.lastUpdated ? moment(project.lastUpdated.toUTCString()).format('DD/MM/YYYY HH:mm:ss') + ' UTC' : '-'
+                        td
+                          form(method='post' action=`/admin/projects/${project.id}/delete${search ? `?q=${encodeURIComponent(search)}&sortBy=${sortBy}&sortDir=${sortDir}&page=${page}&pageSize=${pageSize}` : `?sortBy=${sortBy}&sortDir=${sortDir}&page=${page}&pageSize=${pageSize}`}` onsubmit=`return confirm('Tem certeza que deseja excluir o projeto "${project.name}"? Esta ação é permanente.');` style='margin:0;')
+                            input(name='_csrf' type='hidden' value=csrfToken)
+                            button.btn.btn-danger.btn-sm(type='submit') Excluir
+              else
+                p.text-muted Nenhum projeto encontrado.
+
+              if pageCount > 1
+                nav(aria-label='Paginação de projetos')
+                  ul.pagination
+                    li(class=page === 1 ? 'disabled' : '')
+                      if page > 1
+                        a(href=pageUrl(page - 1)) Anterior
+                      else
+                        span Anterior
+                    each pageNumber in pageNumbers
+                      if pageNumber >= 1 && pageNumber <= pageCount
+                        li(class=pageNumber === page ? 'active' : '')
+                          a(href=pageUrl(pageNumber)) #{pageNumber}
+
+              style.
+                .admin-projects-table { table-layout: auto; }
+                .admin-projects-table th { min-width: 120px; resize: horizontal; overflow: hidden; white-space: nowrap; }
+                .admin-projects-table th:first-child { min-width: 42px; width: 42px; resize: none; }
+                .admin-projects-table th:last-child { min-width: 90px; resize: none; }
+                .admin-projects-table th a { color: inherit; text-decoration: none; display: block; }
+
+              script.
+                (function () {
+                  var selectAll = document.getElementById('select-all-projects')
+                  var checkboxes = Array.prototype.slice.call(document.querySelectorAll('.project-selection'))
+                  var deleteButton = document.getElementById('delete-selected-projects')
+                  if (!selectAll || !deleteButton) return
+                  function updateSelection() {
+                    var selected = checkboxes.filter(function (checkbox) { return checkbox.checked })
+                    deleteButton.disabled = selected.length === 0
+                    selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length
+                    selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length
+                  }
+                  selectAll.addEventListener('change', function () {
+                    checkboxes.forEach(function (checkbox) { checkbox.checked = selectAll.checked })
+                    updateSelection()
+                  })
+                  checkboxes.forEach(function (checkbox) { checkbox.addEventListener('change', updateSelection) })
+                  updateSelection()
+                })()
+

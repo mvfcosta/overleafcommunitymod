@@ -1,0 +1,46 @@
+extends ../layout-marketing
+
+block content
+  #main-content.content.content-alt
+    .container
+      .row
+        .col-sm-12
+          .card
+            .card-body
+              .page-header
+                h1 Usuários externos
+                p
+                  a(href='/admin') Voltar ao painel admin
+                  |  · 
+                  a(href='/admin/projects') Gerenciar projetos
+              if query && query.reset
+                .alert.alert-success Senha redefinida. Um novo email de ativação foi enviado.
+              if query && query.deleted
+                .alert.alert-success Usuário externo excluído.
+              if users && users.length
+                table.table.table-striped
+                  thead
+                    tr
+                      th Email
+                      th Nome
+                      th Criado em
+                      th Último acesso
+                      th Ações
+                  tbody
+                    each user in users
+                      - const resetUrl = '/admin/external-users/' + user._id + '/reset-password'
+                      - const deleteUrl = '/admin/external-users/' + user._id + '/delete'
+                      tr
+                        td= user.email
+                        td #{user.first_name || ''} #{user.last_name || ''}
+                        td= user.signUpDate ? user.signUpDate.toISOString() : '-'
+                        td= user.lastActive ? user.lastActive.toISOString() : '-'
+                        td
+                          form(method='post' action=resetUrl style='display:inline-block; margin-right:8px;' onsubmit="return confirm('Enviar um novo link de definição de senha?');")
+                            input(name='_csrf' type='hidden' value=csrfToken)
+                            button.btn.btn-sm.btn-primary(type='submit') Resetar senha
+                          form(method='post' action=deleteUrl style='display:inline-block;' onsubmit="return confirm('Excluir definitivamente este usuário externo?');")
+                            input(name='_csrf' type='hidden' value=csrfToken)
+                            button.btn.btn-sm.btn-danger(type='submit') Excluir
+              else
+                p Nenhum usuário externo convidado.

@@ -1,5 +1,6 @@
 import AuthorizationManager from './AuthorizationManager.mjs'
 import logger from '@overleaf/logger'
+import Settings from '@overleaf/settings'
 import mongodb from 'mongodb-legacy'
 
 import Errors from '../Errors/Errors.js'
@@ -25,6 +26,18 @@ function _handleAdminDomainRedirect(req, res) {
     return true
   }
   return false
+}
+
+async function ensureUserCanCreateProject(req, res, next) {
+  const user = SessionManager.getSessionUser(req.session)
+  if (
+    !Settings.ldap?.enable ||
+    user?.isAdmin ||
+    user?.authProvider === 'ldap'
+  ) {
+    return next()
+  }
+  return HttpErrorHandler.forbidden(req, res)
 }
 
 async function ensureUserCanReadMultipleProjects(req, res, next) {
@@ -301,6 +314,7 @@ function restricted(req, res, next) {
 }
 
 export default {
+  ensureUserCanCreateProject: expressify(ensureUserCanCreateProject),
   ensureUserCanReadMultipleProjects: expressify(
     ensureUserCanReadMultipleProjects
   ),
